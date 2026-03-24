@@ -9,5 +9,4 @@ COPY *.go ./
 ADD templates /app/templates
 RUN CGO_ENABLED=0 GOOS=linux go build -o test-vault-client
 EXPOSE 8080
-# CMD ["./test-vault-client"]
-CMD ["sleep", "infinity"]
+CMD ["./test-vault-client"]
