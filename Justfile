@@ -39,14 +39,14 @@ test:
 [group('docker')]
 test-docker:
    @echo ">> running $0"
-   docker run -d --name k8s-vault-client --publish 8080:8080 k8s-vault-client
+   docker run -d --name vault-sdk-go-app --publish 8080:8080 ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest
 
 
 [group('k8s')]
 test-k8s:
    @echo ">> running $0"
    kubectl apply -f k8s-auth/go-app.yaml
-   echo "kubectl port-forward pod/devwebapp 8080:8080"
+   echo "kubectl port-forward pod/vault-client 8080:8080"
 
 [group('k8s')]
 clean:
@@ -54,6 +54,6 @@ clean:
    kubectl delete -f go-app.yaml || true
    kubectl apply -f vault-auth-service-account.yaml || true
    kubectl apply -f vault-auth-secret.yaml || true
-   minikube image rm docker.io/library/k8s-vault-client:latest || true
-   docker stop $(docker ps -aq --filter name=k8s-vault-client) || true
-   docker rm $(docker ps -aq --filter name=k8s-vault-client) || true
+   minikube image rm ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest || true
+   docker stop $(docker ps -aq --filter name=reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app) || true
+   docker image rm $(docker image ls --filter "reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app" --format "{{.ID}}") || true
