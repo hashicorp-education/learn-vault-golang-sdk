@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 # syntax=docker/dockerfile:1
 
 FROM golang:1.25
