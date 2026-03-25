@@ -54,6 +54,7 @@ func main() {
 
 	// set up Gin router
 	router := gin.Default()
+	router.SetTrustedProxies([]string{"127.0.0.1", "192.168.1.2", "10.0.0.0/8"})
 
 	// using the token returned from Vault get secret from the default
 	// mount path for KV v2 secret
@@ -83,9 +84,10 @@ func main() {
 	// Run Gin at the default port of 8080. The application will be accessible at http://localhost:8080 when port forwarding is set up.
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": value,
+			"access_key":        value,
+			"secret_access_key": pass,
 		})
 	})
 
-	router.Run()
+	router.Run(":8080")
 }
