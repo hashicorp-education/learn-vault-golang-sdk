@@ -80,14 +80,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	apiURL, ok := secret.Data["api_url"].(string)
+	if !ok {
+		log.Printf("value type assertion failed: %T %#v", secret.Data["api_url"], secret.Data["api_url"])
+		os.Exit(1)
+	}
+
 	log.Println("Access granted!")
-	log.Printf("Retrieved secret value: %s, %s", value, pass)
+	log.Printf("Retrieved secret values - Access Key: %s, Secret Key: %s, API URL: %s", value, pass, apiURL)
 
 	// Run Gin at the default port of 8080. The application will be accessible at http://localhost:8080 when port forwarding is set up.
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"access_key":        value,
 			"secret_access_key": pass,
+			"api_url":           apiURL,
 		})
 	})
 
