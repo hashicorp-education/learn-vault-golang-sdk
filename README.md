@@ -11,4 +11,3 @@ docker pull ghcr.io/mister-ken/github-action-test/k8s-vault-client:latest
 ```
 
 The the [package page](https://github.com/mister-ken/github-action-test/pkgs/container/github-action-test%2Fk8s-vault-client) for more details.
->>>>>>> 2ce8bcd (initial commit)

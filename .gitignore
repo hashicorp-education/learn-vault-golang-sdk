@@ -13,6 +13,10 @@ themes/**
 **.git
 logs/**
 junk/**
+go.mod
+go.sum
+**/go.mod
+**/go.sum
 
 ## terraform files
 *.tfstate
@@ -40,3 +44,4 @@ env/
 actions-runner/**
 token
 *.old
+**/.terraform.lock.hcl
