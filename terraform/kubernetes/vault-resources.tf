@@ -24,7 +24,7 @@ resource "vault_kv_secret_v2" "myapp-api-key-secret" {
   data_json = jsonencode(
     {
       access_key        = "apppuser",
-      secret_access_key = "suP3rS3cr3t!"
+      secret_access_key = "Su4t9mBFykMW29LLHsGH5g=="
     }
   )
 }
