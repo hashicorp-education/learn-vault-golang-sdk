@@ -29,7 +29,7 @@ func main() {
 	if _, exists := os.LookupEnv("VAULT_ADDR"); exists {
 		config.Address = os.Getenv("VAULT_ADDR")
 	} else {
-		log.Println("Cannot find a set VAULT_ADDR  Exiting.")
+		log.Println("Cannot find a set VAULT_ADDR.  Exiting.")
 		os.Exit(1)
 	}
 
