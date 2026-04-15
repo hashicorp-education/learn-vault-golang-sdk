@@ -7,14 +7,15 @@ metadata:
   name: vault-client
   labels:
     app: vault-client
+    namespace: default
 spec:
   serviceAccountName: vault-auth
   containers:
-    - name: app
-      image: ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest
+    - name: vault-client
+      image: docker.io/library/vault-sdk-go-app:latest
       imagePullPolicy: IfNotPresent
       env:
-      - name: VAULT_ADDR
-        value: "http://192.168.65.254:8200"
-      - name: VAULT_TOKEN
-        value: root
+        - name: VAULT_ADDR
+          value: "https://192.168.65.254:8200"
+        - name: VAULT_TOKEN
+          value: root
