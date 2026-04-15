@@ -4,9 +4,10 @@
 # syntax=docker/dockerfile:1
 
 FROM golang:1.25
-LABEL org.opencontainers.image.source=https://github.com/mister-ken/github-action-test
 WORKDIR /app
 COPY go.mod go.sum ./
+COPY certs/vault-ca.pem /usr/local/share/ca-certificates/my-ca.crt
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 RUN go mod download
 COPY *.go ./
 ADD templates /app/templates

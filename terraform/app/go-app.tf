@@ -11,10 +11,15 @@ resource "kubernetes_pod_v1" "vault-client" {
     service_account_name = var.kube_service_name
     container {
       name  = "vault-client"
-      image = "ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest"
+      image = "docker.io/library/vault-sdk-go-app:latest"
+      image_pull_policy = "IfNotPresent"
       env {
         name = "VAULT_ADDR"
         value = local.external_vault_addr
+      }
+      env {
+         name = "VAULT_TOKEN"
+         value = "root"
       }
     }
   }

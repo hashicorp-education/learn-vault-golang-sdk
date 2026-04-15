@@ -45,3 +45,4 @@ actions-runner/**
 token
 *.old
 **/.terraform.lock.hcl
+certs/**

@@ -17,6 +17,16 @@ import (
 func main() {
 	config := vault.DefaultConfig()
 
+	// Configure TLS
+	tlsConfig := &vault.TLSConfig{}
+	err := config.ConfigureTLS(tlsConfig)
+	if err != nil {
+		log.Printf("unable to configure TLS: %v", err)
+		os.Exit(1)
+	} else {
+		log.Printf("TLS configuration successful.")
+	}
+
 	// initialize Vault client
 	client, err := vault.NewClient(config)
 	if err != nil {
@@ -25,7 +35,7 @@ func main() {
 	}
 
 	// determine where the application is running and set the
-	// Vault address and token accordingly
+	// Vault address and token
 	if _, exists := os.LookupEnv("VAULT_ADDR"); exists {
 		config.Address = os.Getenv("VAULT_ADDR")
 	} else {
