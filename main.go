@@ -34,15 +34,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// determine where the application is running and set the
-	// Vault address and token
-	if _, exists := os.LookupEnv("VAULT_ADDR"); exists {
-		config.Address = os.Getenv("VAULT_ADDR")
-	} else {
-		log.Println("Cannot find a set VAULT_ADDR.  Exiting.")
-		os.Exit(1)
-	}
-
 	// The service-account token will be read from the path where the token's
 	// Kubernetes Secret is mounted. By default, Kubernetes will mount it to
 	// /var/run/secrets/kubernetes.io/serviceaccount/token.

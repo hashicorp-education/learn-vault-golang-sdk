@@ -1,96 +1,87 @@
 # Copyright IBM Corp. 2018, 2026
 # SPDX-License-Identifier: MPL-2.0
 
-set shell := ["bash", "-c"]
-set positional-arguments
-# load environment variables from .env file and require them to be set
-# set dotenv-load 
 set dotenv-required
 
-image_name := "vault-sdk-go-app:latest"
+# List all available commands
+default:
+    @just --list
 
-alias test-docker := test
+# Run all steps
+alias all := run-all
 
-default: all
-all: version build start-vault deploy-k8s status test clean
-test-tutorial-path: build start-vault deploy-image-from-github status clean
-clean-all: clean
+# Run the entire tutorial workflow
+run-all: version set-up-lab configure-k8s-vault build-deploy-app verification clean-up
 
-[group('k8s')]
+# Print versions of all tools used in the tutorial
 version:
-   @echo ">> running $0"
-   vault version
-   docker --version
-   kubectl version --client
-   minikube version
+    @echo "=== Tool Versions ==="
+    @vault version
+    @kubectl version --client
+    @docker --version
+    @minikube version
+    @git --version
+    @jq --version
+    @terraform version
 
-[group('k8s')]
-build: clean
-   @echo ">> running $0"
-   docker build -t {{image_name}} .
+env-vars:
+    echo "export VAULT_ADDR=$VAULT_ADDR VAULT_CACERT=$VAULT_CACERT VAULT_TOKEN=$VAULT_TOKEN"
 
-[group('k8s')]
-deploy-k8s:
-   @echo ">> running $0"
-   ./vault-setup.sh
-   kubectl get  secret vault-auth-secret -o json | jq -r ".data.token" | base64 --decode > token
-   minikube image load {{image_name}}
-   sleep 5
-   kubectl apply -f manifests/go-app.yaml
+# Set up the lab environment
+set-up-lab:
+    @echo "=== Setting up the lab ==="
+    git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git || true
+    cd learn-vault-golang-sdk/
+    mkdir -p certs
+    nohup vault server -dev -dev-root-token-id root -dev-tls -dev-tls-san=192.168.65.254 -dev-tls-cert-dir=certs > vault.log 2>&1 &
+    sleep 3
+    export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
+    minikube start
+    minikube status
 
-   echo "kubectl port-forward pod/vault-client 8080:8080"
+# Configure Kubernetes and Vault resources
+configure-k8s-vault:
+    @echo "=== Configuring Kubernetes and Vault resources ==="
+    terraform -chdir=terraform/kubernetes/ init
+    VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/kubernetes/ apply -auto-approve
+    kubectl get serviceaccount vault-auth
+    kubectl get secret vault-auth-secret
+    vault auth list
+    vault policy read api-key-policy
+    vault kv get secret/myapp/api-key
+    vault read auth/kubernetes/config
+    vault read auth/kubernetes/role/vault-kube-auth-role
 
-[group('k8s')]
-deploy-image-from-github:clean
-   @echo ">> running $0"
-   ./vault-setup.sh
-   docker pull ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest
-   kubectl get  secret vault-auth-secret -o json | jq -r ".data.token" | base64 --decode > token
-   minikube image load {{image_name}}
-   sleep 5
-   kubectl apply -f manifests/go-app.yaml
+# Review the Go application code
+review-app:
+    @echo "=== Review the application code ==="
+    more main.go
 
-   echo "kubectl port-forward pod/vault-client 8080:8080"
+# Build and deploy the application
+build-deploy-app:
+    @echo "=== Building and deploying the application ==="
+    ls certs/
+    docker build -t vault-sdk-go-app:latest .
+    minikube image load vault-sdk-go-app:latest
+    terraform -chdir=terraform/app/ init
+    VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/app/ apply -auto-approve
+    kubectl get pods
+    kubectl logs vault-client
 
-[group('k8s')]
-status:
-   @echo ">> running $0"
-   kubectl get pods
-   @source <(grep "export VAULT_" vault.log | sed -E 's/^[[:space:]]*\$[[:space:]]*//')
-   vault status
+# Verification step - prints instructions only
+verification:
+    @echo "=== Verification Instructions ==="
+    @echo "1. In a new terminal, run: kubectl port-forward pod/vault-client 8080:8080"
+    @echo "2. In another terminal, run: curl http://localhost:8080"
+    @echo "3. Expected output: {\"access_key\":\"appuser\",\"secret_access_key\":\"Su4t9mBFykMW29LLHsGH5g==\"}"
 
-[group('exe')]
-test:
-   @echo ">> running $0"
-   curl http://localhost:8080
-
-[group('k8s')]
-test-k8s:
-   @echo ">> running $0"
-   kubectl exec -it vault-client -- curl http://localhost:8080
-
-[group('k8s')]
-clean:
-   @echo ">> running $0"
-   kubectl delete -f manifests/go-app.yaml || true
-   kubectl delete -f manifests/vault-auth-service-account.yaml || true
-   kubectl delete -f manifests/vault-auth-secret.yaml || true
-   minikube image rm {{image_name}} || true
-   minikube image rm ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest || true
-   docker stop $(docker ps -aq --filter name=reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app) || true
-   docker stop $(docker ps -aq --filter name=reference={{image_name}}) || true
-   docker image rm {{image_name}} || true
-   docker image rm $(docker image ls --filter "reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app" --format {{"{{.ID}}/"}}) || true
-
-[group('k8s')]
-clean-images-k8s:
-   @echo ">> running $0"
-   minikube image rm ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app:latest || true
-   # docker image ls --filter "reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app" --format \"{{{{.ID}}\"
-   docker image rm $(docker image ls --filter "reference=ghcr.io/hashicorp-education/learn-vault-golang-sdk/vault-sdk-go-app" --format "{{{{.ID}}") || true
-
-[group('default')]
-start-vault:
-   @echo ">> running $0"
-   nohup $(brew --prefix vault)/bin/vault server -dev -dev-root-token-id root -dev-tls -dev-tls-san=192.168.65.254 -dev-tls-cert-dir=certs > vault.log 2>&1 &
-   sleep 2
+# Clean up all resources
+clean-up:
+    @echo "=== Cleaning up ==="
+    terraform -chdir=terraform/app/ destroy --auto-approve || true
+    VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/kubernetes/ destroy --auto-approve || true
+    minikube stop || true
+    minikube delete || true
+    pkill vault || true
+    rm -rf certs/ || true
+    rm -f vault.log || true
