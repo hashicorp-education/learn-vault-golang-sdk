@@ -11,7 +11,8 @@ default:
 alias all := run-all
 
 # Run the entire tutorial workflow
-run-all: version set-up-lab configure-k8s-vault build-deploy-app verification clean-up
+run-all: version set-up-lab configure-k8s-vault build-deploy-app verification
+run-instruqt: version set-up-lab-instruqt configure-k8s-vault build-deploy-app verification
 
 # Print versions of all tools used in the tutorial
 version:
@@ -38,6 +39,19 @@ set-up-lab:
     export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
     minikube start
     minikube status
+
+set-up-lab-instruqt:
+    @echo "=== Setting up the lab ==="
+    #  git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git || true
+    #  cd learn-vault-golang-sdk/
+    mkdir -p certs
+    minikube start
+    minikube status
+    sleep 3
+    #  nohup vault server -dev -dev-root-token-id root -dev-tls -dev-tls-san=192.168.65.254 -dev-tls-cert-dir=certs > vault.log 2>&1 &
+    kubectl apply -f instruqt/vault.yaml
+    sleep 3
+    export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
 
 # Configure Kubernetes and Vault resources
 configure-k8s-vault:
@@ -68,12 +82,24 @@ build-deploy-app:
     kubectl get pods
     kubectl logs vault-client
 
+build-deploy-app-instruqt:
+    @echo "=== Building and deploying the application ==="
+    ls certs/
+    docker build -t vault-sdk-go-app:latest .
+    minikube image load vault-sdk-go-app:latest
+    terraform -chdir=terraform/app/ init
+    VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/app/ apply -auto-approve
+    kubectl get pods
+    kubectl logs vault-client
+
 # Verification step - prints instructions only
 verification:
     @echo "=== Verification Instructions ==="
     @echo "1. In a new terminal, run: kubectl port-forward pod/vault-client 8080:8080"
     @echo "2. In another terminal, run: curl http://localhost:8080"
     @echo "3. Expected output: {\"access_key\":\"appuser\",\"secret_access_key\":\"Su4t9mBFykMW29LLHsGH5g==\"}"
+    #  nohup sh -c "kubectl port-forward pod/vault-client 8080:8080" < /dev/null > /dev/null 2>&1 &
+    #  curl http://localhost:8080
 
 # Clean up all resources
 clean-up:
