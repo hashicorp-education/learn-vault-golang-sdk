@@ -11,4 +11,5 @@ resource "kubernetes_secret_v1" "vault-auth-secret" {
     }
   }
   type = "kubernetes.io/service-account-token"
+  wait_for_service_account_token = true
 }

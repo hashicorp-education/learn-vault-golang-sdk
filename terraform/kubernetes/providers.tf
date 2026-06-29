@@ -11,10 +11,10 @@ terraform {
       source  = "hashicorp/external"
       version = "2.3.5"
     }
-    vault = {
-      source  = "hashicorp/vault"
-      version = ">= 5.6.0"
-    }
+   #  vault = {
+   #    source  = "hashicorp/vault"
+   #    version = ">= 5.6.0"
+   #  }
   }
 }
 

@@ -11,8 +11,23 @@ default:
 alias all := run-all
 
 # Run the entire tutorial workflow
-run-all: version set-up-lab configure-k8s-vault build-deploy-app verification
-run-instruqt: version set-up-lab-instruqt configure-k8s-vault build-deploy-app verification
+run-all: precheck version set-up-lab vault-port-forward configure-k8s-vault build-deploy-app
+## build-deploy-app verification
+run-instruqt: configure-k8s-vault
+#build-deploy-app verification
+
+[group('default')]
+precheck:
+   #!/bin/bash
+   echo ">> running $0"
+   if pgrep -x "vault" > /dev/null
+   then 
+      echo "vault is running."
+   else 
+      echo "vault is NOT running."; 
+      exit 1;
+   fi
+
 
 # Print versions of all tools used in the tutorial
 version:
@@ -20,7 +35,8 @@ version:
     @vault version
     @kubectl version --client
     @docker --version
-    @minikube version
+    @minikube version || true
+    @k3s -v || true
     @git --version
     @jq --version
     @terraform version
@@ -34,27 +50,18 @@ set-up-lab:
     git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git || true
     cd learn-vault-golang-sdk/
     mkdir -p certs
-    nohup vault server -dev -dev-root-token-id root -dev-tls -dev-tls-san=192.168.65.254 -dev-tls-cert-dir=certs > vault.log 2>&1 &
-    sleep 3
     export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
     minikube start
     minikube status
 
-set-up-lab-instruqt:
-    @echo "=== Setting up the lab ==="
-    #  git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git || true
-    #  cd learn-vault-golang-sdk/
-    mkdir -p certs
-    minikube start
-    minikube status
-    sleep 3
-    #  nohup vault server -dev -dev-root-token-id root -dev-tls -dev-tls-san=192.168.65.254 -dev-tls-cert-dir=certs > vault.log 2>&1 &
-    kubectl apply -f instruqt/vault.yaml
-    sleep 3
-    export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
+
+vault-port-forward:
+   @echo "=== Testing a thing ==="
+   sleep 3
+   nohup sh -c "kubectl port-forward pod/vault 8200:8200" < /dev/null > /dev/null 2>&1 &
 
 # Configure Kubernetes and Vault resources
-configure-k8s-vault:
+configure-k8s-vault: 
     @echo "=== Configuring Kubernetes and Vault resources ==="
     terraform -chdir=terraform/kubernetes/ init
     VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/kubernetes/ apply -auto-approve
@@ -82,6 +89,14 @@ build-deploy-app:
     kubectl get pods
     kubectl logs vault-client
 
+build-deploy-app-k3s:
+    @echo "=== Building and deploying the application ==="
+    ls certs/
+    terraform -chdir=terraform/app/ init
+    VAULT_CACERT="$PWD/certs/vault-ca.pem" terraform -chdir=terraform/app/ apply -auto-approve
+    kubectl get pods
+    kubectl logs vault-client
+
 build-deploy-app-instruqt:
     @echo "=== Building and deploying the application ==="
     ls certs/
@@ -98,7 +113,6 @@ verification:
     @echo "1. In a new terminal, run: kubectl port-forward pod/vault-client 8080:8080"
     @echo "2. In another terminal, run: curl http://localhost:8080"
     @echo "3. Expected output: {\"access_key\":\"appuser\",\"secret_access_key\":\"Su4t9mBFykMW29LLHsGH5g==\"}"
-    #  nohup sh -c "kubectl port-forward pod/vault-client 8080:8080" < /dev/null > /dev/null 2>&1 &
     #  curl http://localhost:8080
 
 # Clean up all resources
@@ -111,3 +125,6 @@ clean-up:
     pkill vault || true
     rm -rf certs/ || true
     rm -f vault.log || true
+    pkill kubectl || true
+
+# curl --cacert /usr/local/share/ca-certificates/my-ca.crt  $VAULT_ADDR/v1/sys/seal-status

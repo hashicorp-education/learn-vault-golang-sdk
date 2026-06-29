@@ -1,5 +1,5 @@
-# Copyright IBM Corp. 2018, 2026
-# SPDX-License-Identifier: MPL-2.0
+# # Copyright IBM Corp. 2018, 2026
+# # SPDX-License-Identifier: MPL-2.0
 
 data "external" "get-k8s-host" {
   program = ["bash", "${path.module}/script.sh"]

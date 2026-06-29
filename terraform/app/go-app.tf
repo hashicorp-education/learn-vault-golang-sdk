@@ -9,6 +9,7 @@ resource "kubernetes_pod_v1" "vault-client" {
   }
   spec {
     service_account_name = var.kube_service_name
+    host_network = true
     container {
       name  = "vault-client"
       image = "docker.io/library/vault-sdk-go-app:latest"

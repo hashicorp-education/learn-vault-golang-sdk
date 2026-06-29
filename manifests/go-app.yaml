@@ -10,6 +10,7 @@ metadata:
     namespace: default
 spec:
   serviceAccountName: vault-auth
+  hostnetwork: true
   containers:
     - name: vault-client
       image: docker.io/library/vault-sdk-go-app:latest
