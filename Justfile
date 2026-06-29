@@ -47,7 +47,7 @@ env-vars:
 # Set up the lab environment
 set-up-lab:
     @echo "=== Setting up the lab ==="
-    git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git || true
+    echo "should here: git clone https://github.com/hashicorp-education/learn-vault-golang-sdk.git"
     cd learn-vault-golang-sdk/
     mkdir -p certs
     export VAULT_ADDR='https://127.0.0.1:8200' VAULT_CACERT='certs/vault-ca.pem' VAULT_TOKEN=root
